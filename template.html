@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>世界の人気動画ランキング|YouTubeで人気の動画を国別に紹介</title>
+<meta name="description" content="世界各国のYouTubeでいま人気の動画を、国別のランキングでまとめて紹介します。">
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --surface: #ffffff;
+    --ink: #1b1c1f;
+    --muted: #646872;
+    --line: #e2e0d8;
+    --chip: #eceae3;
+    --accent: #2f55d4;
+    --accent-ink: #ffffff;
+    --accent-soft: #e4eafc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121316;
+      --surface: #1b1d22;
+      --ink: #ececf0;
+      --muted: #9da1ad;
+      --line: #2c2f37;
+      --chip: #24272e;
+      --accent: #8ea6ff;
+      --accent-ink: #0d1020;
+      --accent-soft: #1f2740;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+  .top { padding: 48px 0 28px; border-bottom: 1px solid var(--line); }
+  .eyebrow { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--accent); }
+  h1 { margin: .2em 0 .3em; font-size: clamp(26px, 4vw, 40px); line-height: 1.25; }
+  .lead { margin: 0; color: var(--muted); }
+  .updated { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+
+  section { padding: 36px 0 8px; }
+  h2 { margin: 0 0 4px; font-size: 20px; }
+  .note { margin: 0 0 16px; font-size: 14px; color: var(--muted); }
+
+  .hscroll {
+    list-style: none; margin: 0; padding: 0 0 12px;
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(230px, 260px); gap: 16px;
+    overflow-x: auto; scroll-snap-type: x proximity;
+  }
+  .hscroll > li { scroll-snap-align: start; }
+  .grid {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px 16px;
+  }
+
+  .card a { display: block; color: inherit; text-decoration: none; border-radius: 12px; }
+  .card a:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: var(--chip); }
+  .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .25s; }
+  .card a:hover .thumb img { transform: scale(1.03); }
+  .rank, .dur { position: absolute; background: rgba(0, 0, 0, .78); color: #fff; font-variant-numeric: tabular-nums; }
+  .rank {
+    left: 8px; top: 8px; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 8px;
+    display: grid; place-items: center; font-size: 14px; font-weight: 700;
+  }
+  .rank.top { background: var(--accent); color: var(--accent-ink); }
+  .dur { right: 8px; bottom: 8px; padding: 1px 6px; border-radius: 5px; font-size: 12px; }
+  .dur.live { background: #d92d20; }
+  .title {
+    margin: 10px 0 4px; font-size: 15px; font-weight: 600; line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+  }
+  .card a:hover .title { color: var(--accent); }
+  .meta { margin: 0; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .where { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 12px; }
+  .tag.multi { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+  .areas { display: grid; gap: 10px; margin: 16px 0 28px; }
+  .area { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: start; }
+  .area-name { padding-top: 7px; font-size: 13px; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .chip.sm { padding: 4px 12px; font-size: 13px; }
+  .chip .n { margin-left: 4px; font-size: 12px; opacity: .7; }
+
+  .country-head { margin-bottom: 20px; padding-top: 24px; border-top: 1px solid var(--line); }
+  h3 { margin: 0 0 12px; font-size: 22px; }
+  .empty { color: var(--muted); }
+
+  footer { margin-top: 48px; padding: 24px 0 48px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  footer p { margin: 0 0 4px; }
+  footer h2 { margin: 20px 0 6px; font-size: 14px; color: var(--ink); }
+  footer ul { margin: 0; padding-left: 1.3em; }
+  footer a { color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .top { padding-top: 32px; }
+    .area { grid-template-columns: 1fr; gap: 4px; }
+    .area-name { padding-top: 0; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .thumb img { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">WORLD VIDEO TRENDS</p>
+    <h1>世界の人気動画ランキング</h1>
+    <p class="lead" id="lead">YouTubeでいま人気の動画を、国別のランキングでまとめました。</p>
+    <p class="updated" id="updated"></p>
+  </header>
+
+  <main>
+    <section id="global" hidden>
+      <h2>複数の国で同時に人気</h2>
+      <p class="note">3か国以上のランキングに入っている動画です。国数は当ページ独自の集計で、YouTube公式のデータではありません。</p>
+      <ul class="hscroll" id="globalList"></ul>
+    </section>
+
+    <section>
+      <h2>国別ランキング</h2>
+      <p class="note">国を選ぶと、その国の人気動画が表示されます。動画を押すとYouTubeで再生できます。</p>
+      <div class="areas" id="areas"></div>
+      <div class="country-head">
+        <h3 id="countryName"></h3>
+        <div class="chips" id="cats"></div>
+      </div>
+      <ol class="grid" id="list"></ol>
+    </section>
+  </main>
+
+  <footer>
+    <p>このページはYouTube APIサービスを利用して、<a href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube</a>の公開データを表示しています。動画の再生はYouTube上で行われます。</p>
+    <p>動画・サムネイル・タイトルの権利は、それぞれの投稿者に帰属します。このページはYouTubeおよびGoogleが運営・承認するものではありません。</p>
+    <h2 id="policy">利用規約とプライバシーポリシー</h2>
+    <ul>
+      <li>このページを利用することで、<a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">YouTube利用規約</a>に同意したものとみなされます。</li>
+      <li>Googleによる情報の取り扱いについては、<a href="https://www.google.com/policies/privacy" target="_blank" rel="noopener">Googleプライバシーポリシー</a>をご覧ください。</li>
+      <li>このページは、閲覧者の個人情報を収集・保存しません。Cookieなどを端末に保存することもありません。</li>
+      <li>サムネイル画像はYouTube(Google)のサーバーから直接読み込まれます。その際、IPアドレスなどの接続情報がGoogleに送信されます。</li>
+      <li>このページに広告は掲載していません。</li>
+      <li>掲載データは定期的に更新し、取得から30日を超えたものは表示しません。</li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+(function () {
+  const $ = (id) => document.getElementById(id);
+  if (!DATA) {
+    $('lead').textContent = 'データがまだありません。build.mjs を実行してください。';
+    return;
+  }
+
+  const now = new Date(DATA.updatedAt);
+  if ((Date.now() - now) / 864e5 > 30) {
+    $('lead').textContent = 'データの取得から30日を超えたため、表示を停止しています。更新をお待ちください。';
+    document.querySelector('main').hidden = true;
+    return;
+  }
+  const regionByCode = new Map(DATA.regions.map((r) => [r.code, r]));
+  const appear = new Map(); // 動画ID → ランクインしている国コードの配列
+  for (const r of DATA.regions) {
+    for (const id of r.videos) {
+      if (!appear.has(id)) appear.set(id, []);
+      appear.get(id).push(r.code);
+    }
+  }
+
+  const trim = (s) => s.replace(/\.0$/, '');
+  function views(n) {
+    if (n >= 1e8) return trim((n / 1e8).toFixed(1)) + '億回視聴';
+    if (n >= 1e5) return Math.round(n / 1e4).toLocaleString('ja-JP') + '万回視聴';
+    if (n >= 1e4) return trim((n / 1e4).toFixed(1)) + '万回視聴';
+    return n.toLocaleString('ja-JP') + '回視聴';
+  }
+  function ago(iso) {
+    const h = Math.max(0, (now - new Date(iso)) / 36e5);
+    if (h < 1) return '1時間以内';
+    if (h < 24) return Math.floor(h) + '時間前';
+    const d = Math.floor(h / 24);
+    if (d < 30) return d + '日前';
+    if (d < 365) return Math.floor(d / 30) + 'か月前';
+    return Math.floor(d / 365) + '年前';
+  }
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  const catName = (id) => DATA.categories[id] || 'その他';
+
+  // opts.rank: 順位バッジ / opts.current: 表示中の国 / opts.showWhere: ランクイン国を列挙
+  function card(id, opts) {
+    const v = DATA.videos[id];
+    const li = el('li', 'card');
+    const a = el('a');
+    a.href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(id);
+    a.target = '_blank';
+    a.rel = 'noopener';
+
+    const thumb = el('div', 'thumb');
+    const img = el('img');
+    img.src = 'https://i.ytimg.com/vi/' + encodeURIComponent(id) + '/mqdefault.jpg';
+    img.alt = '';
+    img.loading = 'lazy';
+    img.width = 320;
+    img.height = 180;
+    thumb.append(img);
+    if (opts.rank) thumb.append(el('span', 'rank' + (opts.rank <= 3 ? ' top' : ''), opts.rank));
+    if (v.live) thumb.append(el('span', 'dur live', 'ライブ'));
+    else if (v.dur) thumb.append(el('span', 'dur', v.dur));
+
+    const title = el('h4', 'title', v.t);
+    title.dir = 'auto';
+    const channel = el('p', 'meta', v.ch);
+    channel.dir = 'auto';
+    a.append(thumb, title, channel, el('p', 'meta', views(v.v) + '・' + ago(v.pub)));
+
+    const codes = appear.get(id) || [];
+    if (opts.showWhere) {
+      const names = codes.map((c) => regionByCode.get(c).name);
+      const shown = names.slice(0, 4).join('・');
+      a.append(el('p', 'where', names.length > 4 ? shown + ' ほか' + (names.length - 4) + 'か国' : shown));
+    }
+    const tags = el('div', 'tags');
+    tags.append(el('span', 'tag', catName(v.cat)));
+    if (opts.showWhere) tags.append(el('span', 'tag multi', codes.length + 'か国でランクイン'));
+    else if (codes.length > 1) tags.append(el('span', 'tag multi', '他' + (codes.length - 1) + 'か国でも人気'));
+    a.append(tags);
+
+    li.append(a);
+    return li;
+  }
+
+  $('lead').textContent = 'YouTubeでいま人気の動画を、世界' + DATA.regions.length + 'の国と地域の国別ランキングでまとめました。';
+  $('updated').textContent = '最終更新: ' + now.toLocaleString('ja-JP', { dateStyle: 'long', timeStyle: 'short' });
+
+  // 複数の国で同時に人気
+  const shared = [...appear.entries()]
+    .filter(([, codes]) => codes.length >= 3)
+    .sort((a, b) => b[1].length - a[1].length || DATA.videos[b[0]].v - DATA.videos[a[0]].v)
+    .slice(0, 12);
+  if (shared.length) {
+    $('global').hidden = false;
+    $('globalList').append(...shared.map(([id]) => card(id, { showWhere: true })));
+  }
+
+  // 国別ランキング
+  const fromHash = location.hash.slice(1).toUpperCase();
+  let current = regionByCode.has(fromHash) ? fromHash : DATA.regions[0].code;
+  let currentCat = 'all';
+
+  function chip(label, pressed, onClick, count, small) {
+    const b = el('button', 'chip' + (small ? ' sm' : ''), label);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(pressed));
+    if (count != null) b.append(el('span', 'n', count));
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function renderAreas() {
+    const areas = new Map();
+    for (const r of DATA.regions) {
+      if (!areas.has(r.area)) areas.set(r.area, []);
+      areas.get(r.area).push(r);
+    }
+    const root = $('areas');
+    root.replaceChildren();
+    for (const [name, list] of areas) {
+      const row = el('div', 'area');
+      const chips = el('div', 'chips');
+      for (const r of list) {
+        chips.append(chip(r.name, r.code === current, () => {
+          current = r.code;
+          currentCat = 'all';
+          history.replaceState(null, '', '#' + r.code);
+          renderAreas();
+          renderCountry();
+        }));
+      }
+      row.append(el('div', 'area-name', name), chips);
+      root.append(row);
+    }
+  }
+
+  function renderCountry() {
+    const region = regionByCode.get(current);
+    $('countryName').textContent = region.name + 'の人気動画 トップ' + region.videos.length;
+
+    const counts = new Map();
+    for (const id of region.videos) {
+      const c = DATA.videos[id].cat;
+      counts.set(c, (counts.get(c) || 0) + 1);
+    }
+    const cats = $('cats');
+    cats.replaceChildren(chip('すべて', currentCat === 'all', () => { currentCat = 'all'; renderCountry(); }, region.videos.length, true));
+    for (const [c, n] of [...counts.entries()].sort((a, b) => b[1] - a[1])) {
+      cats.append(chip(catName(c), currentCat === c, () => { currentCat = c; renderCountry(); }, n, true));
+    }
+
+    const items = region.videos
+      .map((id, i) => ({ id, rank: i + 1 }))
+      .filter((x) => currentCat === 'all' || DATA.videos[x.id].cat === currentCat)
+      .map((x) => card(x.id, { rank: x.rank, current }));
+    $('list').replaceChildren(...items);
+  }
+
+  renderAreas();
+  renderCountry();
+})();
+</script>
+</body>
+</html>

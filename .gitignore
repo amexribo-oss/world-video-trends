@@ -1,0 +1,5 @@
+# 自動生成されるページ(GitHub上で毎日作り直す)
+index.html
+# APIキーは絶対に含めない
+.env
+node_modules/
