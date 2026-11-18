@@ -25,12 +25,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Fetch rankings and build the page
+      - name: Fetch rankings and build the site
         run: node build.mjs
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-      - name: Collect files to publish
-        run: mkdir _site && cp index.html _site/ && cp -r assets _site/
+      - name: Check the built site
+        run: node tools/check.mjs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

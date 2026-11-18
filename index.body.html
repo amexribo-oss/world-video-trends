@@ -1,0 +1,208 @@
+  <header class="top">
+    <div>
+    <p class="eyebrow">WORLD VIDEO TRENDS</p>
+    <h1>世界の人気動画ランキング</h1>
+    <p class="lead" id="lead">YouTubeの人気動画チャート(音楽・映画・ゲームのトレンドが中心)を、世界の国と地域で見比べるサイトです。</p>
+    <p class="updated" id="updated"></p>
+    </div>
+    <a class="yt-badge" href="https://www.youtube.com/" target="_blank" rel="noopener">
+      <picture>
+        <source srcset="assets/developed-with-youtube-sentence-case-light.png" media="(prefers-color-scheme: dark)">
+        <img src="assets/developed-with-youtube-sentence-case-dark.png" alt="Developed with YouTube" width="224" height="80">
+      </picture>
+    </a>
+  </header>
+
+  <main>
+    <!--__ARTICLES__-->
+
+    <div id="rankings">
+    <section id="global" hidden>
+      <h2>複数の国で同時に人気</h2>
+      <p class="note">3か国以上のランキングに入っている動画です。国数は当ページ独自の集計で、YouTube公式のデータではありません。</p>
+      <ul class="hscroll" id="globalList"></ul>
+    </section>
+
+    <section>
+      <h2>国別ランキング</h2>
+      <p class="note">国を選ぶと、その国のチャートの上位が表示されます。動画を押すとYouTubeで再生できます。</p>
+      <div class="areas" id="areas"></div>
+      <div class="country-head">
+        <h3 id="countryName"></h3>
+        <div class="chips" id="cats"></div>
+      </div>
+      <ol class="grid" id="list"></ol>
+    </section>
+    </div>
+  </main>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+(function () {
+  const $ = (id) => document.getElementById(id);
+  if (!DATA) {
+    $('lead').textContent = 'データがまだありません。build.mjs を実行してください。';
+    return;
+  }
+
+  const now = new Date(DATA.updatedAt);
+  if ((Date.now() - now) / 864e5 > 30) {
+    $('lead').textContent = 'ランキングのデータは取得から30日を超えたため、表示を停止しています。更新をお待ちください。';
+    $('rankings').hidden = true;
+    return;
+  }
+  const regionByCode = new Map(DATA.regions.map((r) => [r.code, r]));
+  const appear = new Map(); // 動画ID → ランクインしている国コードの配列
+  for (const r of DATA.regions) {
+    for (const id of r.videos) {
+      if (!appear.has(id)) appear.set(id, []);
+      appear.get(id).push(r.code);
+    }
+  }
+
+  const trim = (s) => s.replace(/\.0$/, '');
+  function views(n) {
+    if (n >= 1e8) return trim((n / 1e8).toFixed(1)) + '億回視聴';
+    if (n >= 1e5) return Math.round(n / 1e4).toLocaleString('ja-JP') + '万回視聴';
+    if (n >= 1e4) return trim((n / 1e4).toFixed(1)) + '万回視聴';
+    return n.toLocaleString('ja-JP') + '回視聴';
+  }
+  function ago(iso) {
+    const h = Math.max(0, (now - new Date(iso)) / 36e5);
+    if (h < 1) return '1時間以内';
+    if (h < 24) return Math.floor(h) + '時間前';
+    const d = Math.floor(h / 24);
+    if (d < 30) return d + '日前';
+    if (d < 365) return Math.floor(d / 30) + 'か月前';
+    return Math.floor(d / 365) + '年前';
+  }
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  const catName = (id) => DATA.categories[id] || 'その他';
+
+  // opts.rank: 順位バッジ / opts.current: 表示中の国 / opts.showWhere: ランクイン国を列挙
+  function card(id, opts) {
+    const v = DATA.videos[id];
+    const li = el('li', 'card');
+    const a = el('a');
+    a.href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(id);
+    a.target = '_blank';
+    a.rel = 'noopener';
+
+    const thumb = el('div', 'thumb');
+    const img = el('img');
+    img.src = 'https://i.ytimg.com/vi/' + encodeURIComponent(id) + '/mqdefault.jpg';
+    img.alt = '';
+    img.loading = 'lazy';
+    img.width = 320;
+    img.height = 180;
+    thumb.append(img);
+    if (opts.rank) thumb.append(el('span', 'rank' + (opts.rank <= 3 ? ' top' : ''), opts.rank));
+    if (v.live) thumb.append(el('span', 'dur live', 'ライブ'));
+    else if (v.dur) thumb.append(el('span', 'dur', v.dur));
+
+    const title = el('h4', 'title', v.t);
+    title.dir = 'auto';
+    const channel = el('p', 'meta', v.ch);
+    channel.dir = 'auto';
+    a.append(thumb, title, channel, el('p', 'meta', views(v.v) + '・' + ago(v.pub)));
+
+    const codes = appear.get(id) || [];
+    if (opts.showWhere) {
+      const names = codes.map((c) => regionByCode.get(c).name);
+      const shown = names.slice(0, 4).join('・');
+      a.append(el('p', 'where', names.length > 4 ? shown + ' ほか' + (names.length - 4) + 'か国' : shown));
+    }
+    const tags = el('div', 'tags');
+    tags.append(el('span', 'tag', catName(v.cat)));
+    if (opts.showWhere) tags.append(el('span', 'tag multi', codes.length + 'か国でランクイン'));
+    else if (codes.length > 1) tags.append(el('span', 'tag multi', '他' + (codes.length - 1) + 'か国でも人気'));
+    a.append(tags);
+
+    li.append(a);
+    return li;
+  }
+
+  $('lead').textContent = 'YouTubeの人気動画チャート(音楽・映画・ゲームのトレンドが中心)を、世界' + DATA.regions.length + 'の国と地域で見比べるサイトです。毎週水曜に日本語の解説を載せています。';
+  $('updated').textContent = 'ランキングの最終更新: ' + now.toLocaleString('ja-JP', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Asia/Tokyo' }) + '(日本時間。毎朝6時ごろ自動更新)';
+
+  // 複数の国で同時に人気
+  const shared = [...appear.entries()]
+    .filter(([, codes]) => codes.length >= 3)
+    .sort((a, b) => b[1].length - a[1].length || DATA.videos[b[0]].v - DATA.videos[a[0]].v)
+    .slice(0, 12);
+  if (shared.length) {
+    $('global').hidden = false;
+    $('globalList').append(...shared.map(([id]) => card(id, { showWhere: true })));
+  }
+
+  // 国別ランキング
+  const fromHash = location.hash.slice(1).toUpperCase();
+  let current = regionByCode.has(fromHash) ? fromHash : DATA.regions[0].code;
+  let currentCat = 'all';
+
+  function chip(label, pressed, onClick, count, small) {
+    const b = el('button', 'chip' + (small ? ' sm' : ''), label);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(pressed));
+    if (count != null) b.append(el('span', 'n', count));
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function renderAreas() {
+    const areas = new Map();
+    for (const r of DATA.regions) {
+      if (!areas.has(r.area)) areas.set(r.area, []);
+      areas.get(r.area).push(r);
+    }
+    const root = $('areas');
+    root.replaceChildren();
+    for (const [name, list] of areas) {
+      const row = el('div', 'area');
+      const chips = el('div', 'chips');
+      for (const r of list) {
+        chips.append(chip(r.name, r.code === current, () => {
+          current = r.code;
+          currentCat = 'all';
+          history.replaceState(null, '', '#' + r.code);
+          renderAreas();
+          renderCountry();
+        }));
+      }
+      row.append(el('div', 'area-name', name), chips);
+      root.append(row);
+    }
+  }
+
+  function renderCountry() {
+    const region = regionByCode.get(current);
+    $('countryName').textContent = region.name + 'の人気動画チャート 上位' + region.videos.length + '本';
+
+    const counts = new Map();
+    for (const id of region.videos) {
+      const c = DATA.videos[id].cat;
+      counts.set(c, (counts.get(c) || 0) + 1);
+    }
+    const cats = $('cats');
+    cats.replaceChildren(chip('すべて', currentCat === 'all', () => { currentCat = 'all'; renderCountry(); }, region.videos.length, true));
+    for (const [c, n] of [...counts.entries()].sort((a, b) => b[1] - a[1])) {
+      cats.append(chip(catName(c), currentCat === c, () => { currentCat = c; renderCountry(); }, n, true));
+    }
+
+    const items = region.videos
+      .map((id, i) => ({ id, rank: i + 1 }))
+      .filter((x) => currentCat === 'all' || DATA.videos[x.id].cat === currentCat)
+      .map((x) => card(x.id, { rank: x.rank, current }));
+    $('list').replaceChildren(...items);
+  }
+
+  renderAreas();
+  renderCountry();
+})();
+</script>

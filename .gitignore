@@ -1,5 +1,11 @@
-# 自動生成されるページ(GitHub上で毎日作り直す)
+# 自動生成されるサイト一式(GitHub上で毎日作り直す)
+_site/
 index.html
+# 手元だけで使う控えと下書き(YouTubeのデータを含むのでGitHubには送らない)
+_data/
+drafts/
+social/
 # APIキーは絶対に含めない
 .env
 node_modules/
+__pycache__/
