@@ -35,16 +35,23 @@ const REGIONS = [
   { code: 'AU', name: 'オーストラリア', area: 'オセアニア' },
 ];
 
+// 「YOUTUBE_API_KEY=」ごと貼られた場合や、前後の空白・引用符を取り除く
+function cleanKey(raw) {
+  return raw.trim().replace(/^YOUTUBE_API_KEY\s*=\s*/, '').replace(/^["']+|["']+$/g, '').trim();
+}
+
 async function loadKey() {
   // GitHub Actions では環境変数から、手元のパソコンでは .env から読む
-  if (process.env.YOUTUBE_API_KEY) return process.env.YOUTUBE_API_KEY.trim();
+  if (process.env.YOUTUBE_API_KEY) return cleanKey(process.env.YOUTUBE_API_KEY);
   const text = await readFile(path.join(here, '..', '.env'), 'utf8');
   const m = text.replace(/^\uFEFF/, '').match(/^\s*YOUTUBE_API_KEY\s*=\s*(\S+)/m);
   if (!m) throw new Error('.env に YOUTUBE_API_KEY が見つかりません');
-  return m[1];
+  return cleanKey(m[1]);
 }
 
-const KEY = await loadKey();
+let KEY = '';
+try {
+KEY = await loadKey();
 
 async function yt(endpoint, params) {
   const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);
@@ -118,3 +125,11 @@ await writeFile(path.join(here, 'index.html'), template.replace('/*__DATA__*/nul
 
 console.log(`完了: ${regions.length}か国 / 動画${Object.keys(videos).length}本 → index.html を更新しました`);
 if (failed.length) console.log(`取得できなかった国:\n  ${failed.join('\n  ')}`);
+} catch (err) {
+  // 失敗の理由を、キーそのものは出さずに記録する(GitHub上では注記として残る)
+  const keyInfo = `キーの長さ: ${KEY.length}文字 / 形式: ${/^AIza[\w-]{35}$/.test(KEY) ? '正常' : '不正'}`;
+  const msg = `${String(err?.message ?? err).slice(0, 400)} (${keyInfo})`;
+  if (process.env.GITHUB_ACTIONS) console.log('::error::' + msg.replace(/%/g, '%25').replace(/\r?\n/g, '%0A'));
+  else console.error(msg);
+  process.exitCode = 1;
+}
