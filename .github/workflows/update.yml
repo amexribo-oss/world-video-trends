@@ -1,0 +1,52 @@
+name: Update and deploy
+
+on:
+  schedule:
+    - cron: '17 21 * * *' # 毎日 6:17 (日本時間)
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch rankings and build the page
+        run: node build.mjs
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      - name: Collect files to publish
+        run: mkdir _site && cp index.html _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      # GitHubは60日間動きのないリポジトリの定期実行を止めるため、毎回有効化し直す
+      - name: Keep the schedule enabled
+        if: github.event_name == 'schedule'
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/update.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
