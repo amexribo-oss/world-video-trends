@@ -110,6 +110,20 @@
   h3 { margin: 0 0 12px; font-size: 22px; }
   .empty { color: var(--muted); }
 
+  .article { max-width: 760px; }
+  .article h3 { margin: 0 0 4px; line-height: 1.4; }
+  .article .date { margin: 0 0 16px; font-size: 13px; color: var(--muted); }
+  .article h4 { margin: 28px 0 6px; font-size: 17px; line-height: 1.5; }
+  .article p { margin: 0 0 12px; }
+  .article ul { margin: 0 0 12px; padding-left: 1.3em; }
+  .article a { color: var(--accent); }
+  .past { max-width: 760px; margin-top: 24px; }
+  .past-head { margin: 0 0 4px; font-size: 13px; color: var(--muted); }
+  .past details { padding: 10px 0; border-top: 1px solid var(--line); }
+  .past summary { cursor: pointer; font-weight: 600; }
+  .past summary span { margin-left: 8px; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .past .article { padding-top: 8px; }
+
   footer { margin-top: 48px; padding: 24px 0 48px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
   footer p { margin: 0 0 4px; }
   footer h2 { margin: 20px 0 6px; font-size: 14px; color: var(--ink); }
@@ -143,6 +157,9 @@
   </header>
 
   <main>
+    <!--__ARTICLES__-->
+
+    <div id="rankings">
     <section id="global" hidden>
       <h2>複数の国で同時に人気</h2>
       <p class="note">3か国以上のランキングに入っている動画です。国数は当ページ独自の集計で、YouTube公式のデータではありません。</p>
@@ -159,6 +176,7 @@
       </div>
       <ol class="grid" id="list"></ol>
     </section>
+    </div>
   </main>
 
   <footer>
@@ -189,7 +207,7 @@ const DATA = /*__DATA__*/null;
   const now = new Date(DATA.updatedAt);
   if ((Date.now() - now) / 864e5 > 30) {
     $('lead').textContent = 'データの取得から30日を超えたため、表示を停止しています。更新をお待ちください。';
-    document.querySelector('main').hidden = true;
+    $('rankings').hidden = true;
     return;
   }
   const regionByCode = new Map(DATA.regions.map((r) => [r.code, r]));

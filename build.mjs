@@ -3,6 +3,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { renderArticles } from './articles.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PER_REGION = 20;
@@ -121,7 +122,9 @@ const json = JSON.stringify(data)
 
 const template = await readFile(path.join(here, 'template.html'), 'utf8');
 if (!template.includes('/*__DATA__*/null')) throw new Error('template.html にデータの差し込み位置がありません');
-await writeFile(path.join(here, 'index.html'), template.replace('/*__DATA__*/null', () => json), 'utf8');
+const articles = await renderArticles(path.join(here, 'articles'));
+const page = template.replace('/*__DATA__*/null', () => json).replace('<!--__ARTICLES__-->', () => articles);
+await writeFile(path.join(here, 'index.html'), page, 'utf8');
 
 console.log(`完了: ${regions.length}か国 / 動画${Object.keys(videos).length}本 → index.html を更新しました`);
 if (failed.length) console.log(`取得できなかった国:\n  ${failed.join('\n  ')}`);
