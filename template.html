@@ -41,7 +41,14 @@
   }
   .wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
-  .top { padding: 48px 0 28px; border-bottom: 1px solid var(--line); }
+  .top {
+    padding: 48px 0 28px; border-bottom: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 4px 24px;
+  }
+  /* 公式ロゴ画像は余白込みなので、その分だけ外側を詰める */
+  .yt-badge { display: block; margin: -20px -32px -24px; border-radius: 8px; }
+  .yt-badge:focus-visible { outline: 2px solid var(--accent); outline-offset: -8px; }
+  .yt-badge img { display: block; width: 224px; height: auto; }
   .eyebrow { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--accent); }
   h1 { margin: .2em 0 .3em; font-size: clamp(26px, 4vw, 40px); line-height: 1.25; }
   .lead { margin: 0; color: var(--muted); }
@@ -121,10 +128,18 @@
 <body>
 <div class="wrap">
   <header class="top">
+    <div>
     <p class="eyebrow">WORLD VIDEO TRENDS</p>
     <h1>世界の人気動画ランキング</h1>
     <p class="lead" id="lead">YouTubeでいま人気の動画を、国別のランキングでまとめました。</p>
     <p class="updated" id="updated"></p>
+    </div>
+    <a class="yt-badge" href="https://www.youtube.com/" target="_blank" rel="noopener">
+      <picture>
+        <source srcset="assets/developed-with-youtube-sentence-case-light.png" media="(prefers-color-scheme: dark)">
+        <img src="assets/developed-with-youtube-sentence-case-dark.png" alt="Developed with YouTube" width="224" height="80">
+      </picture>
+    </a>
   </header>
 
   <main>
